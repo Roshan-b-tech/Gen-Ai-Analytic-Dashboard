@@ -10,6 +10,7 @@ import json
 import asyncio
 import random
 import os
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -38,30 +39,28 @@ class QueryRequest(BaseModel):
 class SuggestionRequest(BaseModel):
     query: str
 
-def generate_mock_data(query: str) -> Dict[str, Any]:
-    """Generate mock data based on the query type"""
-    print(f"Generating mock data for query: {query}")
-    # This is a simple example - in production, you'd use real data and AI
-    if "revenue" in query.lower():
+def generate_mock_data(visualization_type: str) -> Dict[str, Any]:
+    """Generate mock data based on visualization type"""
+    # Generate fewer data points (30 instead of 100)
+    dates = [(datetime.now() - timedelta(days=x)).strftime('%Y-%m-%d') for x in range(30)]
+    dates.reverse()
+    
+    if visualization_type == 'area':
         return {
-            "labels": ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            "values": [450, 520, 480, 580, 620, 680, 720, 750, 780, 820, 850, 900],
-            "growth": [0, 15.6, -7.7, 20.8, 6.9, 9.7, 5.9, 4.2, 4.0, 5.1, 3.7, 5.9],
-            "target": [500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050]
+            'dates': dates,
+            'revenue': [random.randint(1000, 5000) for _ in range(30)],
+            'costs': [random.randint(500, 2000) for _ in range(30)],
+            'profit': [random.randint(500, 3000) for _ in range(30)]
         }
-    elif "users" in query.lower():
+    elif visualization_type == 'bar':
         return {
-            "labels": ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            "values": [1200, 1500, 1800, 2200, 2500, 2800, 3000, 3200, 3500, 3800, 4000, 4200],
-            "growth": [0, 25.0, 20.0, 22.2, 13.6, 12.0, 7.1, 6.7, 9.4, 8.6, 5.3, 5.0],
-            "target": [1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500, 4800]
+            'categories': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            'values': [random.randint(100, 1000) for _ in range(6)]
         }
-    else:
+    else:  # line
         return {
-            "labels": ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            "values": [75, 78, 82, 85, 88, 90, 92, 94, 95, 96, 97, 98],
-            "growth": [0, 4.0, 5.1, 3.7, 3.5, 2.3, 2.2, 2.2, 1.1, 1.1, 1.0, 1.0],
-            "target": [80, 82, 85, 88, 90, 92, 94, 96, 97, 98, 99, 100]
+            'dates': dates,
+            'values': [random.randint(100, 1000) for _ in range(30)]
         }
 
 def determine_visualization_type(query: str) -> Dict[str, Any]:
@@ -258,77 +257,51 @@ async def process_query(query: str):
 @app.post("/api/suggestions")
 async def get_suggestions(query: str = Query(None), request: SuggestionRequest = None):
     try:
+        # Use a smaller set of suggestions
+        analytics_suggestions = {
+            "revenue": [
+                "Show revenue trends",
+                "Revenue by category",
+                "Revenue growth rate"
+            ],
+            "users": [
+                "User growth rate",
+                "Active users",
+                "User retention"
+            ],
+            "performance": [
+                "System performance",
+                "Response times",
+                "Error rates"
+            ],
+            "default": [
+                "Show revenue trends",
+                "User growth rate",
+                "System performance"
+            ]
+        }
+        
         # Get query from either GET parameter or POST body
         query_text = query or (request.query if request else '')
         print(f"Received suggestions request - Query: {query_text}")
         print(f"Request type: {'GET' if query else 'POST'}")
         
-        # Predefined analytics-focused suggestions based on query context
-        analytics_suggestions = {
-            "revenue": [
-                "Show me the revenue trend for the last 6 months",
-                "Compare revenue growth between quarters",
-                "What's the monthly revenue forecast?",
-                "Show me revenue by department",
-                "Compare revenue vs target"
-            ],
-            "users": [
-                "Show me monthly active users",
-                "What's the user growth trend?",
-                "Compare user retention rates",
-                "Show me new user signups",
-                "Analyze user engagement metrics"
-            ],
-            "performance": [
-                "Compare performance metrics across teams",
-                "Show me the performance trends",
-                "What's our current efficiency rate?",
-                "Compare performance vs targets",
-                "Show me productivity metrics"
-            ],
-            "default": [
-                "Show me the latest trends",
-                "Compare key metrics",
-                "What's our overall growth rate?",
-                "Show me the most important KPIs",
-                "Analyze recent performance"
-            ]
-        }
-        
-        # If no query, return default suggestions
         if not query_text:
-            print("No query provided, returning default suggestions")
             return {"suggestions": analytics_suggestions["default"]}
             
-        query_lower = query_text.lower()
-        all_matching_suggestions = []
+        # Simplified matching logic
+        query = query_text.lower()
+        matched_suggestions = []
         
-        # Check each category for matches
         for category, suggestions in analytics_suggestions.items():
-            if category in query_lower or any(query_lower in sugg.lower() for sugg in suggestions):
-                all_matching_suggestions.extend(suggestions)
+            if query in category or any(query in s.lower() for s in suggestions):
+                matched_suggestions.extend(suggestions)
         
-        # If no matches found in categories, search across all suggestions
-        if not all_matching_suggestions:
-            all_suggestions = [sugg for suggs in analytics_suggestions.values() for sugg in suggs]
-            all_matching_suggestions = [
-                sugg for sugg in all_suggestions
-                if query_lower in sugg.lower()
-            ]
-        
-        # If still no matches, return default suggestions
-        if not all_matching_suggestions:
-            print(f"No matches found for query '{query_text}', returning default suggestions")
-            return {"suggestions": analytics_suggestions["default"]}
-            
-        # Return top 5 unique suggestions
-        unique_suggestions = list(dict.fromkeys(all_matching_suggestions))
-        print(f"Found {len(unique_suggestions[:5])} matching suggestions for query '{query_text}'")
-        return {"suggestions": unique_suggestions[:5]}
-        
+        # Return unique suggestions, limited to 5
+        return {"suggestions": list(set(matched_suggestions))[:5]}
     except Exception as e:
         print(f"Error getting suggestions: {str(e)}")
-        return {"suggestions": analytics_suggestions["default"]}  # Return default suggestions on error
+        return {"suggestions": analytics_suggestions["default"]}
 
 # Add a health check endpoint
 @app.get("/")
