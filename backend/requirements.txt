@@ -7,6 +7,6 @@ starlette==0.27.0
 python-multipart==0.0.6
 aiofiles==23.2.1
 numpy==1.26.2
-pandas==2.1.3
-transformers==4.36.2
-torch==2.1.2 
+pandas==2.2.0
+transformers==4.37.2
+torch==2.2.0 
