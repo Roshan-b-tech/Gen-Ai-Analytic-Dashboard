@@ -9,18 +9,20 @@ import torch
 import json
 import asyncio
 import random
+import os
 
 app = FastAPI()
 
-# Enable CORS with specific configuration
+# Get allowed origins from environment variable or use default
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],  # Vite's ports
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600
 )
 
 # Initialize the AI model
