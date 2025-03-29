@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-WORKDIR /app/backend
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,13 +8,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy the backend directory
+COPY backend/ .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
