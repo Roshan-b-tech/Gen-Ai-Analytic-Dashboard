@@ -2,8 +2,11 @@ services:
   - type: web
     name: gen-ai-analytics-backend
     env: python
-    buildCommand: python -m pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    buildCommand: |
+      python3 -m ensurepip --upgrade
+      python3 -m pip install --upgrade pip
+      python3 -m pip install -r requirements.txt
+    startCommand: cd backend && python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
