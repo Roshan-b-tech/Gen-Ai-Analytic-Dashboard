@@ -330,14 +330,10 @@ async def get_suggestions(query: str = Query(None), request: SuggestionRequest =
         print(f"Error getting suggestions: {str(e)}")
         return {"suggestions": analytics_suggestions["default"]}  # Return default suggestions on error
 
-# Add a health check endpoint
-@app.get("/")
+@app.get("/health")
 async def health_check():
-    return {
-        "status": "ok",
-        "message": "Server is running",
-        "version": "1.0.0"
-    }
+    """Health check endpoint"""
+    return {"status": "healthy", "models_loaded": True}
 
 # Add OPTIONS handler for all routes
 @app.options("/{path:path}")
